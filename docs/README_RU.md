@@ -1,6 +1,6 @@
 # Qwen3-TTS Rust
 
-[中文](README.md) | [English](README_EN.md) | [日本語](README_JA.md) | [한국어](README_KO.md) | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Русский](README_RU.md) | [Português](README_PT.md) | [Español](README_ES.md) | [Italiano](README_IT.md)
+[中文](../README.md) | [English](README_EN.md) | [日本語](README_JA.md) | [한국어](README_KO.md) | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Русский](README_RU.md) | [Português](README_PT.md) | [Español](README_ES.md) | [Italiano](README_IT.md)
 
 Реализация Qwen3-TTS на Rust, основанная на ONNX Runtime и llama.cpp (GGUF), предназначенная для обеспечения высокопроизводительных и легко интегрируемых возможностей синтеза речи.
 
@@ -28,14 +28,14 @@
 ### 1. Подготовка окружения (Windows)
 Вам необходимо поместить соответствующие DLL среды выполнения в каталог проекта.
 1. Скачайте [ONNX Runtime](https://github.com/microsoft/onnxruntime/releases) (рекомендуется v1.23.2).
-2. Запустите скрипт `assets/download_dlls.ps1` для автоматической загрузки и установки ONNX Runtime (CPU версия).
+2. Запустите скрипт `../assets/download_dlls.ps1` для автоматической загрузки и установки ONNX Runtime (CPU версия).
 
 ### 2. Подготовка моделей
 Запустите предоставленный скрипт Python для загрузки предварительно обученных моделей:
 ```bash
-python assets/download_models.py
+python ../assets/download_models.py
 ```
-Модели будут сохранены в каталоге `models/`.
+Модели будут сохранены в каталоге `../models/`.
 
 > **Примечание**: Мы загрузим конвертированные файлы моделей в ближайшие дни. Следите за обновлениями.
 
@@ -44,7 +44,7 @@ python assets/download_models.py
 1. Установите зависимости: `pip install numpy gguf`
 2. Запустите скрипт конвертации:
 ```bash
-python assets/convert_assets.py --input_dir /path/to/npy/files --output_file models/qwen3_assets.gguf
+python ../assets/convert_assets.py --input_dir /path/to/npy/files --output_file ../models/qwen3_assets.gguf
 ```
 Движок автоматически загрузит `qwen3_assets.gguf`, если он найден.
 
@@ -125,3 +125,4 @@ fn main() -> Result<(), String> {
 
 ## Лицензия
 MIT / Apache 2.0
+

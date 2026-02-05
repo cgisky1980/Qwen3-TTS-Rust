@@ -1,6 +1,6 @@
 # Qwen3-TTS Rust
 
-[中文](README.md) | [English](README_EN.md) | [日本語](README_JA.md) | [한국어](README_KO.md) | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Русский](README_RU.md) | [Português](README_PT.md) | [Español](README_ES.md) | [Italiano](README_IT.md)
+[中文](../README.md) | [English](README_EN.md) | [日本語](README_JA.md) | [한국어](README_KO.md) | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Русский](README_RU.md) | [Português](README_PT.md) | [Español](README_ES.md) | [Italiano](README_IT.md)
 
 ONNX Runtime과 llama.cpp (GGUF)를 기반으로 한 Qwen3-TTS의 Rust 구현입니다. 고성능이며 통합하기 쉬운 TTS(Text-to-Speech) 기능을 제공하는 것을 목표로 합니다.
 
@@ -28,14 +28,14 @@ ONNX Runtime과 llama.cpp (GGUF)를 기반으로 한 Qwen3-TTS의 Rust 구현입
 ### 1. 실행 환경 준비 (Windows)
 프로젝트 디렉토리에 관련 런타임 DLL을 배치해야 합니다.
 1. [ONNX Runtime](https://github.com/microsoft/onnxruntime/releases) (v1.23.2 권장)을 다운로드합니다.
-2. `assets/download_dlls.ps1` 스크립트를 실행하여 ONNX Runtime (CPU 버전)을 자동으로 다운로드하고 설치합니다.
+2. `../assets/download_dlls.ps1` 스크립트를 실행하여 ONNX Runtime (CPU 버전)을 자동으로 다운로드하고 설치합니다.
 
 ### 2. 모델 리소스 준비
 제공된 Python 스크립트를 실행하여 사전 학습된 모델을 다운로드합니다:
 ```bash
-python assets/download_models.py
+python ../assets/download_models.py
 ```
-모델은 `models/` 디렉토리에 저장됩니다.
+모델은 `../models/` 디렉토리에 저장됩니다.
 
 > **참고**: 변환된 모델 파일은 며칠 내로 업로드될 예정입니다. 기대해 주세요.
 
@@ -132,3 +132,4 @@ fn main() -> Result<(), String> {
 
 ## 라이선스
 MIT / Apache 2.0
+

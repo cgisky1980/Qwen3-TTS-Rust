@@ -1,6 +1,6 @@
 # Qwen3-TTS Rust
 
-[中文](README.md) | [English](README_EN.md) | [日本語](README_JA.md) | [한국어](README_KO.md) | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Русский](README_RU.md) | [Português](README_PT.md) | [Español](README_ES.md) | [Italiano](README_IT.md)
+[中文](../README.md) | [English](README_EN.md) | [日本語](README_JA.md) | [한국어](README_KO.md) | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Русский](README_RU.md) | [Português](README_PT.md) | [Español](README_ES.md) | [Italiano](README_IT.md)
 
 Implementação em Rust do Qwen3-TTS, baseada em ONNX Runtime e llama.cpp (GGUF), projetada para fornecer capacidades de conversão de texto em fala de alto desempenho e fácil integração.
 
@@ -28,14 +28,14 @@ Implementação em Rust do Qwen3-TTS, baseada em ONNX Runtime e llama.cpp (GGUF)
 ### 1. Preparar Ambiente (Windows)
 Você precisa colocar as DLLs de tempo de execução relevantes no diretório do projeto.
 1. Baixe o [ONNX Runtime](https://github.com/microsoft/onnxruntime/releases) (v1.23.2 recomendado).
-2. Execute o script `assets/download_dlls.ps1` para baixar e instalar automaticamente o ONNX Runtime (versão CPU).
+2. Execute o script `../assets/download_dlls.ps1` para baixar e instalar automaticamente o ONNX Runtime (versão CPU).
 
 ### 2. Preparar Modelos
 Execute o script Python fornecido para baixar modelos pré-treinados:
 ```bash
-python assets/download_models.py
+python ../assets/download_models.py
 ```
-Os modelos serão salvos no diretório `models/`.
+Os modelos serão salvos no diretório `../models/`.
 
 > **Nota**: Enviaremos os arquivos de modelo convertidos nos próximos dias. Fique atento.
 
@@ -115,3 +115,4 @@ Obrigado aos seguintes projetos pela inspiração e apoio:
 
 ## Licença
 MIT / Apache 2.0
+

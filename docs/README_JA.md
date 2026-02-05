@@ -1,6 +1,6 @@
 # Qwen3-TTS Rust
 
-[中文](README.md) | [English](README_EN.md) | [日本語](README_JA.md) | [한국어](README_KO.md) | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Русский](README_RU.md) | [Português](README_PT.md) | [Español](README_ES.md) | [Italiano](README_IT.md)
+[中文](../README.md) | [English](README_EN.md) | [日本語](README_JA.md) | [한국어](README_KO.md) | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Русский](README_RU.md) | [Português](README_PT.md) | [Español](README_ES.md) | [Italiano](README_IT.md)
 
 ONNX Runtime と llama.cpp (GGUF) に基づく Qwen3-TTS の Rust 実装です。高性能で統合しやすいテキスト読み上げ機能を提供することを目指しています。
 
@@ -28,14 +28,14 @@ ONNX Runtime と llama.cpp (GGUF) に基づく Qwen3-TTS の Rust 実装です�
 ### 1. 実行環境の準備 (Windows)
 プロジェクト・ディレクトリに関連するランタイム DLL を配置する必要があります。
 1. [ONNX Runtime](https://github.com/microsoft/onnxruntime/releases) (v1.23.2 推奨) をダウンロードします。
-2. `assets/download_dlls.ps1` スクリプトを実行して、ONNX Runtime (CPU 版) を自動的にダウンロードしてインストールします。
+2. `../assets/download_dlls.ps1` スクリプトを実行して、ONNX Runtime (CPU 版) を自動的にダウンロードしてインストールします。
 
 ### 2. モデルリソースの準備
 提供されている Python スクリプトを実行して、事前学習済みモデルをダウンロードします：
 ```bash
-python assets/download_models.py
+python ../assets/download_models.py
 ```
-モデルは `models/` ディレクトリに保存されます。
+モデルは `../models/` ディレクトリに保存されます。
 
 > **注**: 変換済みのモデルファイルは数日中にアップロードされる予定です。ご期待ください。
 
@@ -132,3 +132,4 @@ fn main() -> Result<(), String> {
 
 ## ライセンス
 MIT / Apache 2.0
+
