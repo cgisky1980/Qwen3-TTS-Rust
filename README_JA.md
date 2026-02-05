@@ -21,6 +21,7 @@ ONNX Runtime と llama.cpp (GGUF) に基づく Qwen3-TTS の Rust 実装です�
 | Vulkan | Int4 (Q4) | 0.606 | ~2.30s |
 | Vulkan | F16 | 0.717 | ~2.87s |
 
+> **テスト環境**: Intel Core i9-13980HX, NVIDIA RTX 2080 Ti. VRAM使用量 約2GB.
 > Windows プラットフォームでの 10 回実行の平均値に基づきます。
 
 ## クイックスタート

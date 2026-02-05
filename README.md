@@ -22,7 +22,8 @@
 | Vulkan | Int4 (Q4) | 0.606 | ~2.30s |
 | Vulkan | F16 | 0.717 | ~2.87s |
 
-> 测试数据基于 Windows 平台, 10轮生成平均值。
+> **测试环境**: Intel Core i9-13980HX, NVIDIA RTX 2080 Ti. 显存占用约 2GB.
+> 数据基于 Windows 平台 10 轮生成平均值。
 
 ## 快速开始
 

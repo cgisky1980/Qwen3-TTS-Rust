@@ -21,6 +21,7 @@ Implementação em Rust do Qwen3-TTS, baseada em ONNX Runtime e llama.cpp (GGUF)
 | Vulkan | Int4 (Q4) | 0.606 | ~2.30s |
 | Vulkan | F16 | 0.717 | ~2.87s |
 
+> **Ambiente de Teste**: Intel Core i9-13980HX, NVIDIA RTX 2080 Ti. Uso de VRAM aprox. 2GB.
 > Dados baseados na plataforma Windows, média de 10 execuções.
 
 ## Início Rápido
