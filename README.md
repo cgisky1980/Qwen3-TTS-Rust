@@ -6,10 +6,9 @@
 本项目是 Qwen3-TTS 的 Rust 实现，基于 ONNX Runtime 和 llama.cpp (GGUF)，旨在提供高性能、易集成的文本转语音能力。
 
 ## 特性
-- **高性能**: 核心推理使用 Rust 编写，支持 CUDA 和 DirectML 加速。
+- **高性能架构**: 核心逻辑使用 Rust 编写。LLM 推理基于 **llama.cpp**，支持 **CPU、CUDA、Vulkan** 等多后端及模型量化 (Q4/F16)。
+- **流式解码**: 音频解码采用 **ONNX Runtime (CPU)** 进行流式输出，实现极速响应。
 - **音色克隆**: 支持通过参考音频进行零样本 (Zero-shot) 音色克隆。
-- **流式输出**: 支持流式音频生成。
-- **多后端**: 支持 `ort` (ONNX) 和 `llama.cpp` (GGUF)。
 
 ## 性能表现
 

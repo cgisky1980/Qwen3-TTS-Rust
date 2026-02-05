@@ -5,10 +5,9 @@
 Rust-Implementierung von Qwen3-TTS, basierend auf ONNX Runtime und llama.cpp (GGUF), entwickelt für leistungsstarke, einfach zu integrierende Text-zu-Sprache-Funktionen.
 
 ## Funktionen
-- **Hohe Leistung**: Kerninferenz in Rust geschrieben, unterstützt CUDA- und DirectML-Beschleunigung.
+- **Hochleistungsarchitektur**: Kernlogik in Rust geschrieben. LLM-Inferenz basiert auf **llama.cpp** und unterstützt **CPU-, CUDA-, Vulkan**-Backends sowie Modellquantisierung (Q4/F16).
+- **Streaming-Decodierung**: Die Audiodecodierung verwendet **ONNX Runtime (CPU)** für die Streaming-Ausgabe und ermöglicht eine ultraschnelle Reaktion.
 - **Stimmenklonen**: Unterstützt Zero-Shot-Stimmenklonen über Referenzaudio.
-- **Streaming-Ausgabe**: Unterstützung für Streaming-Audio-Generierung.
-- **Multi-Backend**: Unterstützt `ort` (ONNX) und `llama.cpp` (GGUF).
 
 ## Leistung
 

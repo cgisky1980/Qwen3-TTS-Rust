@@ -5,10 +5,9 @@
 Implementación en Rust de Qwen3-TTS, basada en ONNX Runtime y llama.cpp (GGUF), diseñada para proporcionar capacidades de texto a voz de alto rendimiento y fácil integración.
 
 ## Características
-- **Alto Rendimiento**: Inferencia principal escrita en Rust, soportando aceleración CUDA y DirectML.
+- **Arquitectura de Alto Rendimiento**: Lógica central escrita en Rust. Inferencia LLM basada en **llama.cpp**, soportando backends **CPU, CUDA, Vulkan** y cuantización de modelos (Q4/F16).
+- **Decodificación en Streaming**: La decodificación de audio utiliza **ONNX Runtime (CPU)** para salida en streaming, permitiendo una respuesta ultrarrápida.
 - **Clonación de Voz**: Soporta clonación de voz Zero-shot a través de audio de referencia.
-- **Salida en Streaming**: Soporte para generación de audio en streaming.
-- **Multi-backend**: Soporta `ort` (ONNX) y `llama.cpp` (GGUF).
 
 ## Rendimiento
 
