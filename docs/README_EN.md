@@ -40,7 +40,8 @@ Models will be saved to the `models/` directory.
 > **Note**: We will upload the converted model files in the next few days. Stay tuned.
 
 ### 3. Model Conversion (Advanced)
-If you have original PyTorch checkpoints, use the tools in `assets/scripts`:
+If you have original PyTorch checkpoints, you can use the scripts in `assets/scripts`.
+> **Note**: These scripts depend on the [Qwen3-TTS-GGUF](https://github.com/HaujetZhao/Qwen3-TTS-GGUF) library. Ensure dependencies are installed or run within the original repository environment.
 
 **1. Export ONNX (Codec, Speaker, Decoder):**
 ```bash

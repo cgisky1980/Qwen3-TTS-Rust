@@ -41,7 +41,8 @@ python assets/download_models.py
 > **注意**：我们会在这几天上传转换好的模型文件，敬请期待。
 
 ### 3. 模型转换 (进阶)
-如果你有原始的 PyTorch Checkpoint，可以使用 `assets/scripts` 下的工具进行转换：
+如果您有原始的 PyTorch Checkpoint，可以使用 `assets/scripts` 下的脚本进行转换。
+> **注意**：这些脚本依赖于 [Qwen3-TTS-GGUF](https://github.com/HaujetZhao/Qwen3-TTS-GGUF) 库。请确保已安装相关依赖或将脚本置于原始仓库环境中运行。
 
 **1. 导出 ONNX (Codec, Speaker, Decoder):**
 ```bash
