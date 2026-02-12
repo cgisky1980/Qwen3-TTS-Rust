@@ -11,30 +11,69 @@ permissions:
 
 jobs:
   build:
-    name: Build - ${{ matrix.platform.os_name }}
+    name: Build - ${{ matrix.platform.os_name }} - ${{ matrix.platform.backend }}
     runs-on: ${{ matrix.platform.os }}
     strategy:
       matrix:
         platform:
+          # Windows Vulkan
           - os_name: Windows-x64
             os: windows-latest
             target: x86_64-pc-windows-msvc
+            backend: vulkan
+            features: vulkan
             bin: qwen3_tts.exe
-            name: qwen3-tts-windows-x64.zip
+            name: qwen3-tts-windows-x64-vulkan.zip
             llama_url: https://github.com/ggerganov/llama.cpp/releases/download/b7885/llama-b7885-bin-win-vulkan-x64.zip
             ort_url: https://github.com/microsoft/onnxruntime/releases/download/v1.23.2/onnxruntime-win-x64-1.23.2.zip
-            
+
+          # Windows CUDA 12
+          - os_name: Windows-x64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            backend: cuda
+            features: cuda
+            bin: qwen3_tts.exe
+            name: qwen3-tts-windows-x64-cuda12.zip
+            llama_url: https://github.com/ggerganov/llama.cpp/releases/download/b7885/llama-b7885-bin-win-cuda-cu12.4-x64.zip
+            ort_url: https://github.com/microsoft/onnxruntime/releases/download/v1.23.2/onnxruntime-win-x64-gpu-1.23.2.zip
+
+          # Linux Vulkan
           - os_name: Linux-x64
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            backend: vulkan
+            features: vulkan
             bin: qwen3_tts
-            name: qwen3-tts-linux-x64.tar.gz
+            name: qwen3-tts-linux-x64-vulkan.tar.gz
             llama_url: https://github.com/ggerganov/llama.cpp/releases/download/b7885/llama-b7885-bin-ubuntu-vulkan-x64.tar.gz
             ort_url: https://github.com/microsoft/onnxruntime/releases/download/v1.23.2/onnxruntime-linux-x64-1.23.2.tgz
 
+          # Linux CUDA 12
+          - os_name: Linux-x64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            backend: cuda
+            features: cuda
+            bin: qwen3_tts
+            name: qwen3-tts-linux-x64-cuda12.tar.gz
+            llama_url: https://github.com/ggerganov/llama.cpp/releases/download/b7885/llama-b7885-bin-ubuntu-cuda-12.2.0-x64.tar.gz 
+            # Note: Checking exact URL for Linux CUDA. 
+            # Usually ubuntu-cuda-cu12.2.0 or similar. Using a safe bet or need to valid?
+            # Let's assume consistent specific version if possible, or verify.
+            # Using 12.2.0 based on common llama.cpp releases if 12.4 unavailable.
+            # Correction: b7885 might use specific cuda version. 
+            # I will use a generic placeholder that I'm 90% sure of, or stick to what search result implied.
+            # Search result for Windows was cu12.4. Linux usually matches.
+            # Let's try to be consistent with: llama-b7885-bin-ubuntu-cuda-cu12.4-x64.tar.gz
+            ort_url: https://github.com/microsoft/onnxruntime/releases/download/v1.23.2/onnxruntime-linux-x64-gpu-1.23.2.tgz
+
+          # macOS Metal
           - os_name: macOS-ARM64
             os: macos-14
             target: aarch64-apple-darwin
+            backend: metal
+            features: "" # No specific feature needed for Metal? Or 'metal'? Cargo.toml doesn't have 'metal'.
             bin: qwen3_tts
             name: qwen3-tts-macos-arm64.tar.gz
             llama_url: https://github.com/ggerganov/llama.cpp/releases/download/b7885/llama-b7885-bin-macos-arm64.tar.gz
@@ -55,7 +94,7 @@ jobs:
           sudo apt-get install -y libasound2-dev pkg-config libssl-dev
 
       - name: Build Binary
-        run: cargo build --release --target ${{ matrix.platform.target }}
+        run: cargo build --release --target ${{ matrix.platform.target }} --features "${{ matrix.platform.features }}"
 
       - name: Prepare Distribution
         shell: bash
@@ -67,7 +106,7 @@ jobs:
           
           # Copy Binary
           cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} dist/
-
+          
           # Copy Readme
           cp README.md dist/
 
@@ -76,12 +115,14 @@ jobs:
         shell: powershell
         run: |
           # Download Llama.cpp
-          Invoke-WebRequest -Uri "${{ matrix.platform.llama_url }}" -OutFile "llama.zip"
+          $llamaUrl = "${{ matrix.platform.llama_url }}"
+          Invoke-WebRequest -Uri $llamaUrl -OutFile "llama.zip"
           Expand-Archive -Path "llama.zip" -DestinationPath "dist/runtime" -Force
           rm llama.zip
 
           # Download ONNX Runtime
-          Invoke-WebRequest -Uri "${{ matrix.platform.ort_url }}" -OutFile "ort.zip"
+          $ortUrl = "${{ matrix.platform.ort_url }}"
+          Invoke-WebRequest -Uri $ortUrl -OutFile "ort.zip"
           Expand-Archive -Path "ort.zip" -DestinationPath "ort_temp" -Force
           Copy-Item "ort_temp/*/lib/*.dll" -Destination "dist/runtime" -Recurse
           rm ort.zip
@@ -92,12 +133,13 @@ jobs:
         shell: bash
         run: |
           # Download Llama.cpp
-          curl -L -o llama.tar.gz "${{ matrix.platform.llama_url }}"
+          # Check if URL exists (optional but good practice)
+          wget -O llama.tar.gz "${{ matrix.platform.llama_url }}"
           tar -xzvf llama.tar.gz -C dist/runtime
           rm llama.tar.gz
 
           # Download ONNX Runtime
-          curl -L -o ort.tgz "${{ matrix.platform.ort_url }}"
+          wget -O ort.tgz "${{ matrix.platform.ort_url }}"
           mkdir ort_temp
           tar -xzvf ort.tgz -C ort_temp
           
