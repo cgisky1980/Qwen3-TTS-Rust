@@ -1,47 +1,89 @@
 # Qwen3-TTS Rust
 
-[简体中文](../README.md) | [English](README_EN.md) | [Español](README_ES.md)
+[简体中文](../README.md) | [English](README_EN.md) | [日本語](README_JA.md) | [Korean](README_KO.md) | [Français](README_FR.md) | [Español](README_ES.md) | [Italiano](README_IT.md) | [Deutsch](README_DE.md) | [Русский](README_RU.md) | [Português](README_PT.md)
 
-Este proyecto es una implementación en Rust de alto rendimiento de Qwen3-TTS. Los avances clave son la síntesis **"Guiada por Instrucciones (Instruction-Driven)"** y la **"Clonación de Voz Personalizada (Custom Speakers)"**. Aprovechando la seguridad de memoria de Rust y la inferencia eficiente de llama.cpp/ONNX, ofrece una solución de texto a voz de grado industrial.
+This project is the ultimate performance implementation of Qwen3-TTS. The core breakthroughs are the deep integration of **"Instruction-Driven"** synthesis and **"Zero-shot Custom Speakers (Cloning)"**. Leveraging Rust's memory safety and the efficient inference of llama.cpp/ONNX, it provides an industrial-grade text-to-speech solution.
 
-## 🚀 Gran Salto: Instrucciones y Personalización
+## 🚀 Core Features
 
-A diferencia de los sistemas TTS tradicionales, Qwen3-TTS Rust le permite controlar el estilo de habla mediante simples instrucciones de texto y clonar cualquier voz en segundos.
+### 1. Extreme Performance & Streaming
+- **Concurrent Streaming Decoding**: Uses a 4-frame (64 codes) granularity for concurrent decoding, determining first-token latency as low as 300ms for a "speech-while-thinking" experience.
+- **Hardware Acceleration**: **Vulkan** (Windows/Linux) and **Metal** (macOS) acceleration are enabled by default, significantly boosting inference speed.
+- **Automatic Runtime Management**: Zero-config environment; automatically downloads and configures `llama.cpp` (b7885) and `onnxruntime`, ready to use out of the box.
 
-### 1. Guiado por Instrucciones (Instruction-Driven)
-Puede incluir instrucciones de emoción, velocidad o estilo directamente en el texto. El modelo de lenguaje (LLM) utiliza su comprensión semántica para "saber" cómo leer.
-> **Ejemplo**: `cargo run --example qwen3-tts -- --text "[Alegremente] ¡Hola! ¡El clima de hoy es absolutamente fantástico!" --voice-file "speaker.json"`
+### 2. Flexible Speaker Management
+- **Auto-Scan & Cache**: Automatically loads voice files from the `speakers/` directory on startup.
+- **Versatile Selection**: Supports flexible speaker selection via CLI arguments `--speaker <name>` or `--voice-file <path>`.
+- **Smart Fallback**: Automatically falls back to the default voice (vivian) if the specified speaker is not found, ensuring system stability.
 
-### 2. Voces Personalizadas (Custom Speakers)
-Ya no está limitado a voces preestablecidas. Con solo un **audio de referencia WAV de 24kHz**, puede crear un paquete de voz único.
--   **Extracción en un clic**: Extrae automáticamente los vectores del hablante (Speaker Embedding) y las características acústicas (Codec Codes).
--   **Guardado Permanente**: Se guarda como `.json` después de la extracción, no se necesita el audio original para su uso futuro.
+### 3. Precise Instruction Control
+- **Instruction-Driven**: Supports embedding emotion tags like `[Happy]`, `[Sad]` in the text to adjust the delivery style in real-time.
+- **EOS Alignment**: Perfectly aligned with Qwen3's stop logic, supporting multiple EOS token detections to prevent generation of trailing silence or artifacts.
 
-## 🌟 Ventajas Técnicas
+## 📊 Benchmarks
 
--   **Multiplataforma/Backends**: Adaptación profunda para **Windows / Linux / macOS**, soportando **CPU / CUDA / Vulkan / Metal**.
--   **Runtime Sin Configuración**: Gestiona automáticamente las dependencias binarias de `llama.cpp` (b7885) y `onnxruntime`, con mapeo de activos multiplataforma y carga dinámica.
--   **Motor Híbrido**: 
-    -   **Inferencia LLM**: Utiliza llama.cpp para la conversión de texto a características acústicas, con aceleración de hardware **Vulkan** activada por defecto.
-    -   **Decodificación de Audio**: Utiliza ONNX Runtime (CPU) para una decodificación fluida, asegurando una latencia mínima.
+| Backend | Model (GGUF) | RTF (Real-Time Factor) | Avg Time (ms) | Avg Audio (s) | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **CUDA** | Q5_K_M | **0.553** | 1162.6 | 2.19 | OK |
+| **Vulkan** | Q5_K_M | 0.598 | 1285.4 | 2.19 | OK |
+| **CUDA** | Q8_0 | 0.640 | 1523.4 | 2.44 | OK |
+| **Vulkan** | Q8_0 | 0.638 | 1502.0 | 2.44 | OK |
+| **CPU** | Q5_K_M | 1.677 | 2823.4 | 1.96 | OK |
+| **CPU** | Q8_0 | 1.866 | 4160.1 | 2.51 | OK |
 
-## 🛠️ Guía Rápida
+- **Test Environment**: Intel Core i9-13980HX, NVIDIA RTX 2080 Ti. VRAM Usage ~0.7-1.5GB.
+- **Data Source**: Average of 10 generations on Windows.
+- **Best Performance**: RTF 0.553 (CUDA + Q5KM), meaning 1 second of audio takes only 0.553 seconds to generate.
 
-### Crear y Guardar una Voz Personalizada
+## 🛠️ Quick Start
+
+### 1. Basic Generation
+Generate speech using the default speaker:
 ```powershell
-cargo run --example qwen3-tts -- `
-    --model-dir models `
-    --ref-audio "path/to/me.wav" `
-    --ref-text "El texto que dije durante la grabación" `
-    --save-voice "models/presets/my_voice.json" `
-    --text "[Emocionado] ¡Oye! ¡Mi voz ha sido clonada en el motor Rust!" `
-    --max-steps 512
+cargo run --example qwen3-tts -- --text "Hello, welcome to use Qwen3-TTS Rust!"
 ```
 
-## 📂 Gestión Automatizada
-El programa tiene incorporada una lógica de **autodescarga de modelos y runtimes**. En la primera ejecución, descargará automáticamente los modelos de HuggingFace y los binarios oficiales de `llama.cpp` adecuados en la carpeta `runtime/` según su sistema operativo.
+### 2. Specify Speaker
+Use a preset or custom speaker:
+```powershell
+# Use name (requires corresponding .json file in speakers/ directory)
+cargo run --example qwen3-tts -- --text "The weather is nice today." --speaker dylan
 
-## 📜 Licencia y Agradecimientos
-- Licencia **MIT / Apache 2.0**.
-- Gracias al repositorio oficial de [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS) por los modelos y la base técnica.
-- Gracias a [Qwen3-TTS-GGUF](https://github.com/HaujetZhao/Qwen3-TTS-GGUF) por la inspiración en el flujo de inferencia GGUF.
+# Use specific file path
+cargo run --example qwen3-tts -- --text "I am a custom voice." --voice-file "path/to/my_voice.json"
+```
+
+### 3. Clone New Voice
+Clone a voice with just 3-10 seconds of reference audio:
+```powershell
+cargo run --example qwen3-tts -- `
+    --ref-audio "ref.wav" `
+    --ref-text "The text content corresponding to the reference audio" `
+    --save-voice "speakers/my_voice.json" `
+    --text "New voice saved, you can use it directly now!"
+```
+
+### 4. Advanced Configuration
+```powershell
+cargo run --example qwen3-tts -- `
+    --text "Long text generation test." `
+    --max-steps 1024 `    # Adjust max generation length
+    --output "output.wav" # 指定 output filename
+```
+
+## 📂 Directory Structure
+
+The system automatically builds the following structure on first run:
+
+```text
+.
+├── models/             # Model files (GGUF, ONNX, Tokenizer)
+├── runtime/            # Auto-downloaded dependencies (dll, so, dylib)
+└── speakers/           # User custom voices
+```
+
+## 📜 License & Acknowledgements
+
+- Based on **MIT / Apache 2.0** license.
+- Thanks to [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS) official repository for models and technical foundation.
+- Thanks to [Qwen3-TTS-GGUF](https://github.com/HaujetZhao/Qwen3-TTS-GGUF) for inspiration on the GGUF inference flow.

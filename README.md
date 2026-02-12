@@ -1,6 +1,6 @@
 # Qwen3-TTS Rust
 
-[中文](README.md) | [English](docs/README_EN.md)
+[中文](README.md) | [English](docs/README_EN.md) | [日本語](docs/README_JA.md) | [Korean](docs/README_KO.md) | [Français](docs/README_FR.md) | [Español](docs/README_ES.md) | [Italiano](docs/README_IT.md) | [Deutsch](docs/README_DE.md) | [Русский](docs/README_RU.md) | [Português](docs/README_PT.md)
 
 本项目是 Qwen3-TTS 的极致性能实现，核心突破在于 **“指令驱动 (Instruction-Driven)”** 与 **“零样本自定义音色 (Custom Speakers)”** 的深度集成。通过 Rust 的内存安全特性与 llama.cpp/ONNX 的高效推理，为您提供工业级的文本转语音解决方案。
 
@@ -12,13 +12,28 @@
 - **自动运行时管理**：零配置环境，自动下载并配置 `llama.cpp` (b7885) 和 `onnxruntime`，开箱即用。
 
 ### 2. 灵活的说话人管理
-- **自动扫描与缓存**：启动时自动加载 `speakers/` 和 `preset_speakers/` 目录下的音色文件。
+- **自动扫描与缓存**：启动时自动加载 `speakers/` 目录下的音色文件。
 - **多种选择方式**：支持通过 CLI 参数 `--speaker <name>` 或 `--voice-file <path>` 灵活选择说话人。
 - **智能回退**：若指定说话人不存在，自动回退至默认音色 (vivian)，确保系统稳定性。
 
 ### 3. 精准的指令控制
 - **指令驱动**：支持在文本中嵌入 `[高兴]`、`[悲伤]` 等情感指令，实时调整演绎风格。
 - **EOS 对齐**：完美对齐 Qwen3 的停止逻辑，支持多种 EOS token 检测，杜绝生成末尾的静音或乱码。
+
+## 📊 性能基准 (Benchmarks)
+
+| Backend | Model (GGUF) | RTF (Real-Time Factor) | Avg Time (ms) | Avg Audio (s) | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **CUDA** | Q5_K_M | **0.553** | 1162.6 | 2.19 | OK |
+| **Vulkan** | Q5_K_M | 0.598 | 1285.4 | 2.19 | OK |
+| **CUDA** | Q8_0 | 0.640 | 1523.4 | 2.44 | OK |
+| **Vulkan** | Q8_0 | 0.638 | 1502.0 | 2.44 | OK |
+| **CPU** | Q5_K_M | 1.677 | 2823.4 | 1.96 | OK |
+| **CPU** | Q8_0 | 1.866 | 4160.1 | 2.51 | OK |
+
+- **测试环境**: Intel Core i9-13980HX, NVIDIA RTX 2080 Ti. 显存占用约 0.7-1.5GB.
+- **数据来源**: Windows 平台 10 轮生成平均值。
+- **最佳性能**: RTF 0.553 (CUDA + Q5KM)，即生成 1 秒音频仅需 0.553 秒。
 
 ## 🛠️ 快速上手
 
@@ -64,8 +79,7 @@ cargo run --example qwen3-tts -- `
 .
 ├── models/             # 模型文件 (GGUF, ONNX, Tokenizer)
 ├── runtime/            # 自动下载的依赖库 (dll, so, dylib)
-├── speakers/           # 用户自定义音色
-└── preset_speakers/    # 系统预设音色
+└── speakers/           # 用户自定义音色
 ```
 
 ## 📜 许可证与致谢

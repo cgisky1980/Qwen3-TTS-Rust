@@ -1,63 +1,89 @@
 # Qwen3-TTS Rust
 
-[简体中文](../README.md) | [English](README_EN.md) | [日本語](README_JA.md)
+[简体中文](../README.md) | [English](README_EN.md) | [日本語](README_JA.md) | [Korean](README_KO.md) | [Français](README_FR.md) | [Español](README_ES.md) | [Italiano](README_IT.md) | [Deutsch](README_DE.md) | [Русский](README_RU.md) | [Português](README_PT.md)
 
-本プロジェクトは Qwen3-TTS の極致性能を実現した Rust 実装です。核心的な進歩は **「指示駆動 (Instruction-Driven)」** と **「ゼロショット・カスタム音色 (Custom Speakers)」** の深い統合にあります。Rust のメモリ安全特性と llama.cpp/ONNX の効率的な推論を組み合わせ、工業レベルのテキスト読み上げソリューションを提供します。
+This project is the ultimate performance implementation of Qwen3-TTS. The core breakthroughs are the deep integration of **"Instruction-Driven"** synthesis and **"Zero-shot Custom Speakers (Cloning)"**. Leveraging Rust's memory safety and the efficient inference of llama.cpp/ONNX, it provides an industrial-grade text-to-speech solution.
 
-## 🚀 核心的な飛躍：指示とカスタマイズ
+## 🚀 Core Features
 
-従来の TTS とは異なり、Qwen3-TTS Rust では単純なテキスト指示で音声スタイルを制御でき、あらゆる音色を数秒でクローンできます。
+### 1. Extreme Performance & Streaming
+- **Concurrent Streaming Decoding**: Uses a 4-frame (64 codes) granularity for concurrent decoding, determining first-token latency as low as 300ms for a "speech-while-thinking" experience.
+- **Hardware Acceleration**: **Vulkan** (Windows/Linux) and **Metal** (macOS) acceleration are enabled by default, significantly boosting inference speed.
+- **Automatic Runtime Management**: Zero-config environment; automatically downloads and configures `llama.cpp` (b7885) and `onnxruntime`, ready to use out of the box.
 
-### 1. 指示駆動 (Instruction-Driven)
-テキストの中に感情、速度、スタイルの指示を直接含めることができます。大規模言語モデル (LLM) の意味理解能力により、AI が「どう読むべきか」を判断します。
-> **例**: `cargo run --example qwen3-tts -- --text "[嬉しそうに] こんにちは！今日の天気は本当に最高ですね！" --voice-file "speaker.json"`
+### 2. Flexible Speaker Management
+- **Auto-Scan & Cache**: Automatically loads voice files from the `speakers/` directory on startup.
+- **Versatile Selection**: Supports flexible speaker selection via CLI arguments `--speaker <name>` or `--voice-file <path>`.
+- **Smart Fallback**: Automatically falls back to the default voice (vivian) if the specified speaker is not found, ensuring system stability.
 
-### 2. カスタム音色 (Custom Speakers)
-プリセットの音色に縛られることはもうありません。わずか **24kHz の WAV 参照オーディオ** があれば、専用の音色パックを作成できます。
--   **ワンクリック抽出**: 話者ベクトル (Speaker Embedding) と音響特徴 (Codec Codes) を自動的に抽出します。
--   **永久保存**: 抽出後は `.json` として保存され、次回の使用時に元の音声ファイルは不要です。
+### 3. Precise Instruction Control
+- **Instruction-Driven**: Supports embedding emotion tags like `[Happy]`, `[Sad]` in the text to adjust the delivery style in real-time.
+- **EOS Alignment**: Perfectly aligned with Qwen3's stop logic, supporting multiple EOS token detections to prevent generation of trailing silence or artifacts.
 
-## 🌟 技術的優位性
+## 📊 Benchmarks
 
--   **全プラットフォーム/全バックエンド対応**: **Windows / Linux / macOS** に深く適応し、 **CPU / CUDA / Vulkan / Metal** をサポートします。
--   **ゼロ構成ランタイム**: `llama.cpp` (b7885) と `onnxruntime` のバイナリ依存関係を自動管理し、プラットフォーム間のアセットマッピングと動的ロードをサポートします。
--   **ハイブリッド・エンジン**: 
-    -   **LLM 推論**: llama.cpp を使用してテキストから音響特徴への変換を処理し、デフォルトで **Vulkan** ハードウェアアクセラレーションを有効にします。
-    -   **音声デコード**: ONNX Runtime (CPU) を使用して効率的なストリーミングデコードを行い、極めて低い初回トークン遅延を実現します。
+| Backend | Model (GGUF) | RTF (Real-Time Factor) | Avg Time (ms) | Avg Audio (s) | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **CUDA** | Q5_K_M | **0.553** | 1162.6 | 2.19 | OK |
+| **Vulkan** | Q5_K_M | 0.598 | 1285.4 | 2.19 | OK |
+| **CUDA** | Q8_0 | 0.640 | 1523.4 | 2.44 | OK |
+| **Vulkan** | Q8_0 | 0.638 | 1502.0 | 2.44 | OK |
+| **CPU** | Q5_K_M | 1.677 | 2823.4 | 1.96 | OK |
+| **CPU** | Q8_0 | 1.866 | 4160.1 | 2.51 | OK |
 
-## 🛠️ クイック操作ガイド
+- **Test Environment**: Intel Core i9-13980HX, NVIDIA RTX 2080 Ti. VRAM Usage ~0.7-1.5GB.
+- **Data Source**: Average of 10 generations on Windows.
+- **Best Performance**: RTF 0.553 (CUDA + Q5KM), meaning 1 second of audio takes only 0.553 seconds to generate.
 
-### カスタム音色を作成して保存する
+## 🛠️ Quick Start
+
+### 1. Basic Generation
+Generate speech using the default speaker:
 ```powershell
-cargo run --example qwen3-tts -- `
-    --model-dir models `
-    --ref-audio "path/to/me.wav" `
-    --ref-text "録音時に話した内容" `
-    --save-voice "models/presets/my_voice.json" `
-    --text "[興奮気味に] ねえ！私の声が Rust エンジンにクローンされたよ！"
+cargo run --example qwen3-tts -- --text "Hello, welcome to use Qwen3-TTS Rust!"
 ```
 
-### 既存の音色パックを使用する
+### 2. Specify Speaker
+Use a preset or custom speaker:
 ```powershell
-cargo run --example qwen3-tts -- `
-    --model-dir models `
-    --voice-file "models/presets/my_voice.json" `
-    --text "Qwen3-TTS Rust 推論エンジンへようこそ。" `
-    --max-steps 512
+# Use name (requires corresponding .json file in speakers/ directory)
+cargo run --example qwen3-tts -- --text "The weather is nice today." --speaker dylan
+
+# Use specific file path
+cargo run --example qwen3-tts -- --text "I am a custom voice." --voice-file "path/to/my_voice.json"
 ```
 
-## 📂 自動管理
-プログラムには、**モデルとランタイムの自動ダウンロード**ロジックが組み込まれています。初回実行時に HuggingFace からモデルファイルを自動的にダウンロードし、OS に応じた適切な `llama.cpp` 公式バイナリを `runtime/` ディレクトリにダウンロードします。
+### 3. Clone New Voice
+Clone a voice with just 3-10 seconds of reference audio:
+```powershell
+cargo run --example qwen3-tts -- `
+    --ref-audio "ref.wav" `
+    --ref-text "The text content corresponding to the reference audio" `
+    --save-voice "speakers/my_voice.json" `
+    --text "New voice saved, you can use it directly now!"
+```
 
-### 推奨ディレクトリ構造
+### 4. Advanced Configuration
+```powershell
+cargo run --example qwen3-tts -- `
+    --text "Long text generation test." `
+    --max-steps 1024 `    # Adjust max generation length
+    --output "output.wav" # Specify output filename
+```
+
+## 📂 Directory Structure
+
+The system automatically builds the following structure on first run:
+
 ```text
-models/
-├── onnx/      (Codec/Speaker/Decoder ONNX)
-├── tokenizer/ (Tokenizer Config)
-└── gguf/      (Talker/Predictor/Assets GGUF)
+.
+├── models/             # Model files (GGUF, ONNX, Tokenizer)
+├── runtime/            # Auto-downloaded dependencies (dll, so, dylib)
+└── speakers/           # User custom voices
 ```
 
-## 📜 ライセンスと謝辞
-- **MIT / Apache 2.0** ライセンスに基づきます。
-- モデルと技術基盤を提供してくれた [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS) 公式リポジトリに感謝します。
-- GGUF 推論フローのインスピレーションを与えてくれた [Qwen3-TTS-GGUF](https://github.com/HaujetZhao/Qwen3-TTS-GGUF) に感謝します。
+## 📜 License & Acknowledgements
+
+- Based on **MIT / Apache 2.0** license.
+- Thanks to [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS) official repository for models and technical foundation.
+- Thanks to [Qwen3-TTS-GGUF](https://github.com/HaujetZhao/Qwen3-TTS-GGUF) for inspiration on the GGUF inference flow.
