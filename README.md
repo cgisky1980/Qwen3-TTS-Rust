@@ -40,32 +40,42 @@
 ### 1. 基础生成
 使用默认说话人生成语音：
 ```powershell
-cargo run --example qwen3-tts -- --text "你好，欢迎使用 Qwen3-TTS Rust！"
+cargo run --bin qwen3_tts -- --text "你好，欢迎使用 Qwen3-TTS Rust！"
 ```
 
 ### 2. 指定说话人
 使用预设或自定义说话人：
 ```powershell
 # 使用名称 (需在 speakers/ 目录下存在对应的 .json 文件)
-cargo run --example qwen3-tts -- --text "今天天气不错。" --speaker dylan
+cargo run --bin qwen3_tts -- --text "今天天气不错。" --speaker dylan
 
 # 使用指定文件路径
-cargo run --example qwen3-tts -- --text "我是自定义音色。" --voice-file "path/to/my_voice.json"
+cargo run --bin qwen3_tts -- --text "我是自定义音色。" --voice-file "path/to/my_voice.json"
 ```
 
 ### 3. 克隆新音色
 只需 3-10 秒的参考音频即可克隆音色：
 ```powershell
-cargo run --example qwen3-tts -- `
+cargo run --bin qwen3_tts -- `
     --ref-audio "ref.wav" `
     --ref-text "参考音频对应的文本内容" `
     --save-voice "speakers/my_voice.json" `
     --text "新音色已保存，现在可以直接使用了！"
 ```
 
-### 4. 高级配置
+### 4. 风格/情感控制 (Instruction)
+通过 `--instruction` 参数实时改变说话语气：
 ```powershell
-cargo run --example qwen3-tts -- `
+# 悲伤语气
+cargo run --bin qwen3_tts -- --text "对不起，我不是故意的..." --instruction "悲伤啜泣，非常难过"
+
+# 开心语气
+cargo run --bin qwen3_tts -- --text "太棒了！我们成功了！" --instruction "开心激动，语速稍快"
+```
+
+### 5. 高级配置
+```powershell
+cargo run --bin qwen3_tts -- `
     --text "长文本生成测试。" `
     --max-steps 1024 `    # 调整最大生成长度
     --output "output.wav" # 指定输出文件名

@@ -40,32 +40,42 @@ This project is the ultimate performance implementation of Qwen3-TTS. The core b
 ### 1. Basic Generation
 Generate speech using the default speaker:
 ```powershell
-cargo run --example qwen3-tts -- --text "Hello, welcome to use Qwen3-TTS Rust!"
+cargo run --bin qwen3_tts -- --text "Hello, welcome to use Qwen3-TTS Rust!"
 ```
 
 ### 2. Specify Speaker
 Use a preset or custom speaker:
 ```powershell
 # Use name (requires corresponding .json file in speakers/ directory)
-cargo run --example qwen3-tts -- --text "The weather is nice today." --speaker dylan
+cargo run --bin qwen3_tts -- --text "The weather is nice today." --speaker dylan
 
 # Use specific file path
-cargo run --example qwen3-tts -- --text "I am a custom voice." --voice-file "path/to/my_voice.json"
+cargo run --bin qwen3_tts -- --text "I am a custom voice." --voice-file "path/to/my_voice.json"
 ```
 
 ### 3. Clone New Voice
 Clone a voice with just 3-10 seconds of reference audio:
 ```powershell
-cargo run --example qwen3-tts -- `
+cargo run --bin qwen3_tts -- `
     --ref-audio "ref.wav" `
     --ref-text "The text content corresponding to the reference audio" `
     --save-voice "speakers/my_voice.json" `
     --text "New voice saved, you can use it directly now!"
 ```
 
-### 4. Advanced Configuration
+### 4. Style/Emotion Control (Instruction)
+Change the speaking style in real-time via the `--instruction` argument:
 ```powershell
-cargo run --example qwen3-tts -- `
+# Sad tone
+cargo run --bin qwen3_tts -- --text "I'm sorry, I didn't mean to..." --instruction "Sad and sobbing, very upset"
+
+# Happy tone
+cargo run --bin qwen3_tts -- --text "Awesome! We did it!" --instruction "Happy and excited, slightly faster"
+```
+
+### 5. Advanced Configuration
+```powershell
+cargo run --bin qwen3_tts -- `
     --text "Long text generation test." `
     --max-steps 1024 `    # Adjust max generation length
     --output "output.wav" # Specify output filename
