@@ -322,7 +322,7 @@ impl Downloader {
         let mut archive = tar::Archive::new(tar);
         for entry in archive.entries()? {
             let mut entry = entry?;
-            let path = entry.path()?.to_owned();
+            let path = entry.path()?.into_owned();
             let path_str = path.to_string_lossy();
 
             if !prefix.is_empty() && !path_str.starts_with(prefix) {

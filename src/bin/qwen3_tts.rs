@@ -1,4 +1,5 @@
 use clap::Parser;
+use qwen3_tts::SamplerConfig;
 use qwen3_tts::TtsEngine;
 use qwen3_tts::VoiceFile;
 use std::path::PathBuf;
@@ -54,6 +55,22 @@ struct Args {
     /// Instruction style (e.g. "Happy", "Sad") - prepended to text
     #[arg(long)]
     instruction: Option<String>,
+
+    /// Temperature for sampling (higher = more random, 0.0 = greedy)
+    #[arg(long, default_value_t = 0.5)]
+    temperature: f32,
+
+    /// Top-K sampling (0 = disabled)
+    #[arg(long, default_value_t = 50)]
+    top_k: i32,
+
+    /// Top-P (nucleus) sampling (1.0 = disabled)
+    #[arg(long, default_value_t = 1.0)]
+    top_p: f32,
+
+    /// Random seed for reproducibility (omit for random)
+    #[arg(long)]
+    seed: Option<u64>,
 }
 
 #[tokio::main]
@@ -78,6 +95,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .map_err(|e| format!("Engine load failed: {}", e))?;
     engine.set_max_steps(args.max_steps);
+
+    // 1.1 Configure sampler
+    let sampler_config = SamplerConfig::new(args.temperature, args.top_k, args.top_p, args.seed);
+    engine.set_sampler_config(sampler_config);
+    println!(
+        "Sampler: temp={}, top_k={}, top_p={}, seed={:?}",
+        args.temperature, args.top_k, args.top_p, args.seed
+    );
 
     // 1.5 Load custom speakers if dir specified
     if args.speakers_dir.exists() {
