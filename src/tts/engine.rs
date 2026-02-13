@@ -25,9 +25,9 @@ pub struct SamplerConfig {
 impl Default for SamplerConfig {
     fn default() -> Self {
         Self {
-            temperature: 0.5,
-            top_k: 50,
-            top_p: 1.0,
+            temperature: 0.7,
+            top_k: 40,
+            top_p: 0.9,
             seed: None,
         }
     }

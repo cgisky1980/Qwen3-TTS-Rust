@@ -81,6 +81,24 @@ cargo run --bin qwen3_tts -- `
     --output "output.wav" # Specify output filename
 ```
 
+### 6. Sampling Parameters
+Control randomness and diversity of generation through sampling parameters:
+```powershell
+# Adjust temperature (higher = more random, 0.0 = greedy)
+cargo run --bin qwen3_tts -- --text "Test text" --temperature 0.8
+
+# Use fixed seed for reproducibility
+cargo run --bin qwen3_tts -- --text "Test text" --seed 12345
+
+# Full parameter example
+cargo run --bin qwen3_tts -- `
+    --text "Testing sampling parameters." `
+    --temperature 0.7 `   # Temperature (default 0.7)
+    --top-k 40 `          # Top-K sampling (default 40)
+    --top-p 0.9 `         # Top-P nucleus sampling (default 0.9)
+    --seed 42             # Random seed (optional)
+```
+
 ## 📂 Directory Structure
 
 The system automatically builds the following structure on first run:

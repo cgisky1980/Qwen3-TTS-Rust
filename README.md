@@ -81,7 +81,95 @@ cargo run --bin qwen3_tts -- `
     --output "output.wav" # 指定输出文件名
 ```
 
-## 📂 目录结构
+### 6. 采样参数调整
+通过采样参数控制生成的随机性和多样性：
+```powershell
+# 调整温度 (更高 = 更随机，0.0 = 贪婪)
+cargo run --bin qwen3_tts -- --text "测试文本" --temperature 0.8
+
+# 使用固定种子复现结果
+cargo run --bin qwen3_tts -- --text "测试文本" --seed 12345
+
+# 完整参数示例
+cargo run --bin qwen3_tts -- `
+    --text "测试采样参数。" `
+    --temperature 0.7 `   # 温度 (默认 0.7)
+    --top-k 40 `          # Top-K 采样 (默认 40)
+    --top-p 0.9 `         # Top-P 核采样 (默认 0.9)
+    --seed 42             # 随机种子 (可选)
+```
+
+## 📦 作为 Rust 库使用
+
+在 `Cargo.toml` 中添加依赖：
+
+```toml
+[dependencies]
+# 本地引用
+qwen3-tts = { path = "." }
+
+# 或从 Git 引用
+# qwen3-tts = { git = "https://github.com/cgisky1980/Qwen3-TTS-Rust" }
+```
+
+### 基础用法
+
+```rust
+use qwen3_tts::{TtsEngine, VoiceFile, SamplerConfig};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 1. 初始化引擎
+    let mut engine = TtsEngine::new("models", "none").await?;
+    
+    // 2. 配置采样参数 (可选)
+    let sampler_config = SamplerConfig::new(0.7, 40, 0.9, None);
+    engine.set_sampler_config(sampler_config);
+    
+    // 3. 加载音色
+    let voice = VoiceFile::load("speakers/sohee.json")?;
+    
+    // 4. 生成语音
+    let audio = engine.generate_with_voice(
+        "你好，欢迎使用 Qwen3-TTS！",
+        &voice,
+        None,  // instruction
+    )?;
+    
+    // 5. 保存音频
+    audio.save_wav("output.wav")?;
+    
+    Ok(())
+}
+```
+
+### 从参考音频创建音色
+
+```rust
+use qwen3_tts::TtsEngine;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut engine = TtsEngine::new("models", "none").await?;
+    
+    // 从参考音频提取音色
+    let voice = engine.create_voice_file(
+        "reference.wav",
+        "参考音频对应的文本".to_string(),
+    )?;
+    
+    // 保存音色文件
+    voice.save("speakers/my_voice.json")?;
+    
+    // 使用新音色生成
+    let audio = engine.generate_with_voice("测试新音色", &voice, None)?;
+    audio.save_wav("output.wav")?;
+    
+    Ok(())
+}
+```
+
+## �� 目录结构
 
 系统首次运行会自动构建如下结构：
 

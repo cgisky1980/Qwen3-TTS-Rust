@@ -81,6 +81,94 @@ cargo run --bin qwen3_tts -- `
     --output "output.wav" # Specify output filename
 ```
 
+### 6. Sampling Parameters
+Control randomness and diversity of generation through sampling parameters:
+```powershell
+# Adjust temperature (higher = more random, 0.0 = greedy)
+cargo run --bin qwen3_tts -- --text "Test text" --temperature 0.8
+
+# Use fixed seed for reproducibility
+cargo run --bin qwen3_tts -- --text "Test text" --seed 12345
+
+# Full parameter example
+cargo run --bin qwen3_tts -- `
+    --text "Testing sampling parameters." `
+    --temperature 0.7 `   # Temperature (default 0.7)
+    --top-k 40 `          # Top-K sampling (default 40)
+    --top-p 0.9 `         # Top-P nucleus sampling (default 0.9)
+    --seed 42             # Random seed (optional)
+```
+
+## 📦 Using as a Rust Library
+
+Add dependency in your `Cargo.toml`:
+
+```toml
+[dependencies]
+# Local reference
+qwen3-tts = { path = "." }
+
+# Or from Git
+# qwen3-tts = { git = "https://github.com/cgisky1980/Qwen3-TTS-Rust" }
+```
+
+### Basic Usage
+
+```rust
+use qwen3_tts::{TtsEngine, VoiceFile, SamplerConfig};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 1. Initialize engine
+    let mut engine = TtsEngine::new("models", "none").await?;
+    
+    // 2. Configure sampling (optional)
+    let sampler_config = SamplerConfig::new(0.7, 40, 0.9, None);
+    engine.set_sampler_config(sampler_config);
+    
+    // 3. Load voice
+    let voice = VoiceFile::load("speakers/sohee.json")?;
+    
+    // 4. Generate speech
+    let audio = engine.generate_with_voice(
+        "Hello, welcome to Qwen3-TTS!",
+        &voice,
+        None,  // instruction
+    )?;
+    
+    // 5. Save audio
+    audio.save_wav("output.wav")?;
+    
+    Ok(())
+}
+```
+
+### Create Voice from Reference Audio
+
+```rust
+use qwen3_tts::TtsEngine;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut engine = TtsEngine::new("models", "none").await?;
+    
+    // Extract voice from reference audio
+    let voice = engine.create_voice_file(
+        "reference.wav",
+        "Text corresponding to reference audio".to_string(),
+    )?;
+    
+    // Save voice file
+    voice.save("speakers/my_voice.json")?;
+    
+    // Generate with new voice
+    let audio = engine.generate_with_voice("Testing new voice", &voice, None)?;
+    audio.save_wav("output.wav")?;
+    
+    Ok(())
+}
+```
+
 ## 📂 Directory Structure
 
 The system automatically builds the following structure on first run:

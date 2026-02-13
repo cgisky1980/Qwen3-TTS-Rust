@@ -57,15 +57,15 @@ struct Args {
     instruction: Option<String>,
 
     /// Temperature for sampling (higher = more random, 0.0 = greedy)
-    #[arg(long, default_value_t = 0.5)]
+    #[arg(long, default_value_t = 0.7)]
     temperature: f32,
 
     /// Top-K sampling (0 = disabled)
-    #[arg(long, default_value_t = 50)]
+    #[arg(long, default_value_t = 40)]
     top_k: i32,
 
     /// Top-P (nucleus) sampling (1.0 = disabled)
-    #[arg(long, default_value_t = 1.0)]
+    #[arg(long, default_value_t = 0.9)]
     top_p: f32,
 
     /// Random seed for reproducibility (omit for random)
