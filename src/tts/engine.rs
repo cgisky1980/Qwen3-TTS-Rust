@@ -9,6 +9,41 @@ use crate::AudioSample;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+/// Sampler configuration for TTS generation
+#[derive(Debug, Clone)]
+pub struct SamplerConfig {
+    /// Temperature for sampling (higher = more random, 0.0 = greedy)
+    pub temperature: f32,
+    /// Top-K sampling (0 = disabled)
+    pub top_k: i32,
+    /// Top-P (nucleus) sampling (1.0 = disabled)
+    pub top_p: f32,
+    /// Random seed (None = use system entropy)
+    pub seed: Option<u64>,
+}
+
+impl Default for SamplerConfig {
+    fn default() -> Self {
+        Self {
+            temperature: 0.7,
+            top_k: 40,
+            top_p: 0.9,
+            seed: None,
+        }
+    }
+}
+
+impl SamplerConfig {
+    pub fn new(temperature: f32, top_k: i32, top_p: f32, seed: Option<u64>) -> Self {
+        Self {
+            temperature,
+            top_k,
+            top_p,
+            seed,
+        }
+    }
+}
+
 /// Main TTS Engine Struct
 ///
 /// IMPORTANT: Field ordering matters for Drop!
@@ -33,6 +68,7 @@ pub struct TtsEngine {
     // Config
     model_dir: PathBuf,
     max_steps: usize,
+    sampler_config: SamplerConfig,
 }
 
 impl TtsEngine {
@@ -114,6 +150,7 @@ impl TtsEngine {
             speakers: HashMap::new(),
             model_dir: model_dir.to_path_buf(),
             max_steps: 512,
+            sampler_config: SamplerConfig::default(),
         };
 
         // 6. Load Speakers
@@ -134,6 +171,16 @@ impl TtsEngine {
     /// Set the maximum number of generation steps (tokens).
     pub fn set_max_steps(&mut self, steps: usize) {
         self.max_steps = steps;
+    }
+
+    /// Set the sampler configuration for generation.
+    pub fn set_sampler_config(&mut self, config: SamplerConfig) {
+        self.sampler_config = config;
+    }
+
+    /// Get the current sampler configuration.
+    pub fn get_sampler_config(&self) -> &SamplerConfig {
+        &self.sampler_config
     }
 
     /// Load all speakers from the specified directory.
@@ -421,7 +468,21 @@ impl TtsEngine {
         // Hoisted resources
         let mut predictor_batch = LlamaBatch::new(32, predictor_embd, 1, 1);
         let predictor_sampler = LlamaSampler::greedy(self.predictor_model.n_vocab);
-        let talker_sampler = LlamaSampler::new(self.talker_model.n_vocab, 0.5, 50, 1.0, 12345);
+
+        // Use sampler config for talker
+        let seed = self.sampler_config.seed.unwrap_or_else(|| {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos() as u64)
+                .unwrap_or_else(|_| rand::random())
+        });
+        let talker_sampler = LlamaSampler::new(
+            self.talker_model.n_vocab,
+            self.sampler_config.temperature,
+            self.sampler_config.top_k,
+            self.sampler_config.top_p,
+            seed,
+        );
 
         let (tx, rx) = std::sync::mpsc::channel::<(Vec<i64>, bool)>();
         let decoder_model_path = self
@@ -447,8 +508,15 @@ impl TtsEngine {
                 code_buffer.extend(codes);
                 // Accumulate 4 frames (64 codes) before decoding to balance overhead and latency
                 if code_buffer.len() >= 64 || is_final {
-                    let safe_codes: Vec<i64> = code_buffer.iter().map(|&c| c.min(2047)).collect();
-                    if !safe_codes.is_empty() {
+                    // Truncate to multiple of 16 (one frame = 16 codes)
+                    let valid_len = (code_buffer.len() / 16) * 16;
+                    if valid_len > 0 {
+                        // Clamp codes to valid range [0, 2047]
+                        let safe_codes: Vec<i64> = code_buffer
+                            .iter()
+                            .take(valid_len)
+                            .map(|&c| c.clamp(0, 2047))
+                            .collect();
                         if let Ok(samples) = local_decoder.decode(&safe_codes, &mut state, is_final)
                         {
                             if let Some(ref stx) = stream_tx {
@@ -456,8 +524,16 @@ impl TtsEngine {
                             }
                             full_audio.extend(samples);
                         }
+                        // Keep remaining codes (if any) for next iteration
+                        let remaining = code_buffer.len() - valid_len;
+                        if remaining > 0 && !is_final {
+                            code_buffer.drain(0..valid_len);
+                        } else {
+                            code_buffer.clear();
+                        }
+                    } else {
+                        code_buffer.clear();
                     }
-                    code_buffer.clear();
                 }
                 if is_final {
                     break;
@@ -483,15 +559,14 @@ impl TtsEngine {
                 println!("\n    EOS detected at step {} (code_0={})", step, code_0);
                 break;
             }
-            let code_0_i32 = code_0 as i32;
-            all_codes.push(code_0_i32);
+            all_codes.push(code_0);
 
             // Predictor
             let emb_idx = if step == 0 { n_tokens_prompt - 1 } else { 0 };
             let m_hidden = self.talker_ctx.get_embedding_at(emb_idx).to_vec();
 
             let m_h_1024 = self.assets.project(&m_hidden);
-            let code_0_1024 = self.assets.get_codec_embedding_1024(0, code_0_i32);
+            let code_0_1024 = self.assets.get_codec_embedding_1024(0, code_0);
 
             let mut predictor_input = Vec::with_capacity(2 * predictor_embd);
             predictor_input.extend_from_slice(&m_h_1024);
@@ -507,7 +582,7 @@ impl TtsEngine {
                 .map_err(|e| format!("Predictor prefill failed: {}", e))?;
 
             let mut step_embeds_2048: Vec<Vec<f32>> = Vec::new();
-            step_embeds_2048.push(self.assets.get_codec_embedding(0, code_0_i32));
+            step_embeds_2048.push(self.assets.get_codec_embedding(0, code_0));
 
             for q in 1..16 {
                 let start_offset = (q - 1) * 2048;

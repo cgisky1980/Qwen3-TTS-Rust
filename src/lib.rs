@@ -8,6 +8,7 @@ pub mod tts;
 pub mod utils;
 
 // Re-export core types for convenience
+pub use tts::engine::SamplerConfig;
 pub use tts::engine::TtsEngine;
 pub use tts::prompt::PromptBuilder;
 pub use utils::audio::AudioSample;

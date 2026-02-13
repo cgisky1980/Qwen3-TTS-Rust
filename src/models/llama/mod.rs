@@ -215,7 +215,7 @@ pub fn get_ffi() -> &'static LlamaFFI {
             // 加载 llama
             let llama_path = runtime_path.join(llama_name);
             let lib = libloading::Library::new(&llama_path)
-                .expect(&format!("Failed to load {}. Please ensure it is in the runtime/ directory.", llama_name));
+                .unwrap_or_else(|_| panic!("Failed to load {}. Please ensure it is in the runtime/ directory.", llama_name));
 
             unsafe extern "C" fn dummy_fn() {}
 
@@ -295,15 +295,15 @@ pub fn get_ffi() -> &'static LlamaFFI {
 
             // Temporarily switch CWD to runtime/ to help ggml_backend_load_all() find its siblings
             let original_cwd = std::env::current_dir().ok();
-            if let Some(ref path) = original_cwd {
+            if original_cwd.is_some() {
                 let _ = std::env::set_current_dir(&runtime_path);
             }
 
             (ffi.ggml_backend_load_all)(); // 加载所有 backend
             (ffi.llama_backend_init)(); // 初始化 backend
 
-            if let Some(path) = original_cwd {
-                let _ = std::env::set_current_dir(path);
+            if let Some(cwd) = original_cwd {
+                let _ = std::env::set_current_dir(cwd);
             }
 
             std::mem::forget(lib);
@@ -516,12 +516,12 @@ pub struct LlamaBatch {
     batch: llama_batch,
     n_tokens_max: usize,
     n_embd: usize,
-    n_pos_per_embd: usize,
+    _n_pos_per_embd: usize,
     _embd_buffer: Vec<c_float>,
     _pos_buffer: Vec<c_int>,
-    seq_id_buffers: Vec<Vec<c_int>>, // Changed from seq_id_flat to vector of vectors
-    n_seq_id_buffer: Vec<c_int>,
-    logits_buffer: Vec<i8>,
+    _seq_id_buffers: Vec<Vec<c_int>>,
+    _n_seq_id_buffer: Vec<c_int>,
+    _logits_buffer: Vec<i8>,
 }
 impl LlamaBatch {
     pub fn new(
@@ -543,12 +543,12 @@ impl LlamaBatch {
                 batch,
                 n_tokens_max,
                 n_embd,
-                n_pos_per_embd,
+                _n_pos_per_embd: n_pos_per_embd,
                 _embd_buffer: Vec::new(),
                 _pos_buffer: Vec::new(),
-                seq_id_buffers: Vec::new(), // Not used for storage, just for logic?
-                n_seq_id_buffer: Vec::new(),
-                logits_buffer: Vec::new(),
+                _seq_id_buffers: Vec::new(),
+                _n_seq_id_buffer: Vec::new(),
+                _logits_buffer: Vec::new(),
             }
         }
     }
@@ -691,8 +691,7 @@ impl LlamaSampler {
                 let mut max_val = f32::NEG_INFINITY;
                 let mut max_idx = start;
 
-                for i in start..end {
-                    let val = logits[i];
+                for (i, &val) in logits.iter().enumerate().take(end).skip(start) {
                     if val > max_val {
                         max_val = val;
                         max_idx = i;
@@ -795,8 +794,7 @@ impl LlamaSampler {
                 let mut max_idx = start;
 
                 // Check range [0, limit_idx)
-                for i in start..end {
-                    let val = logits[i];
+                for (i, &val) in logits.iter().enumerate().take(end).skip(start) {
                     if val > max_val {
                         max_val = val;
                         max_idx = i;
@@ -823,8 +821,12 @@ impl LlamaSampler {
                 Vec::with_capacity(limit_idx + allow_tokens.len());
 
             // Add range [0, limit_idx)
-            for i in 0..limit_idx.min(self.n_vocab) {
-                candidates.push((i, logits[i]));
+            for (i, &val) in logits
+                .iter()
+                .enumerate()
+                .take(limit_idx.min(self.n_vocab))
+            {
+                candidates.push((i, val));
             }
 
             // Add allowed special tokens

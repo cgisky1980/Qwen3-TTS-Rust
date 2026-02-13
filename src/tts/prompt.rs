@@ -24,6 +24,7 @@ pub struct PromptData {
 pub struct PromptBuilder;
 
 impl PromptBuilder {
+    #[allow(clippy::too_many_arguments)]
     pub fn build_clone_prompt(
         text: &str,
         tokenizer: &Tokenizer,

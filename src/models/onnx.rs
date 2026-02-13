@@ -12,6 +12,7 @@ use std::error::Error;
 
 /// 创建 Session，自动选择最佳执行提供者
 /// 优先级: DirectML -> CUDA -> CPU
+#[allow(dead_code)]
 fn create_session_with_best_ep(model_path: &str) -> Result<Session, Box<dyn Error>> {
     // 尝试按优先级注册执行提供者
     // ort 会自动 fallback 到下一个可用的提供者
@@ -462,6 +463,12 @@ pub struct DecoderState {
     pub latent_buffer: Array3<f32>,
     pub conv_history: Array3<f32>,
     pub kv_cache: Vec<(Array4<f32>, Array4<f32>)>,
+}
+
+impl Default for DecoderState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DecoderState {
