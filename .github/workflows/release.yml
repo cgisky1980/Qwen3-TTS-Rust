@@ -90,6 +90,9 @@ jobs:
           
           # Copy Readme
           cp README.md dist/
+          
+          # Copy Speakers
+          cp -r speakers/* dist/speakers/
 
       - name: Download and Bundle Runtimes (Windows)
         if: runner.os == 'Windows'

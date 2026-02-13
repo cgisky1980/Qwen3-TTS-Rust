@@ -110,14 +110,83 @@ pub struct OnnxRuntime {
 }
 
 impl OnnxRuntime {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
-        #[cfg(windows)]
-        let lib_path = "onnxruntime.dll";
-        #[cfg(unix)]
-        let lib_path = "libonnxruntime.so";
+    fn load_library() -> Result<Library, Box<dyn Error>> {
+        let runtime_path = std::env::current_dir()
+            .unwrap_or_default()
+            .join("runtime");
 
-        let lib = Library::new(lib_path)
-            .map_err(|e| OnnxRuntimeError(format!("Failed to load ONNX Runtime DLL: {}", e)))?;
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::ffi::OsStrExt;
+            let path_wide = std::ffi::OsStr::new(&runtime_path)
+                .encode_wide()
+                .chain(std::iter::once(0))
+                .collect::<Vec<u16>>();
+            unsafe {
+                winapi::um::winbase::SetDllDirectoryW(path_wide.as_ptr());
+            }
+
+            let path_key = "PATH";
+            let path_var = std::env::var_os(path_key).unwrap_or_default();
+            let mut paths: Vec<_> = std::env::split_paths(&path_var).collect();
+            if !paths.contains(&runtime_path) {
+                paths.insert(0, runtime_path.clone());
+                let new_path = std::env::join_paths(paths).unwrap();
+                std::env::set_var(path_key, new_path);
+            }
+        }
+
+        #[cfg(unix)]
+        {
+            let path_key = if cfg!(target_os = "macos") {
+                "DYLD_LIBRARY_PATH"
+            } else {
+                "LD_LIBRARY_PATH"
+            };
+            let path_var = std::env::var_os(path_key).unwrap_or_default();
+            let mut paths: Vec<_> = std::env::split_paths(&path_var).collect();
+            if !paths.contains(&runtime_path) {
+                paths.insert(0, runtime_path.clone());
+                let new_path = std::env::join_paths(paths).unwrap();
+                std::env::set_var(path_key, new_path);
+            }
+        }
+
+        #[cfg(windows)]
+        let lib_paths = vec![
+            "onnxruntime.dll",
+            "runtime/onnxruntime.dll",
+            "./runtime/onnxruntime.dll",
+        ];
+        #[cfg(unix)]
+        let lib_paths = vec![
+            "libonnxruntime.so",
+            "runtime/libonnxruntime.so",
+            "./runtime/libonnxruntime.so",
+        ];
+
+        let mut last_error = None;
+        for path in lib_paths {
+            match Library::new(path) {
+                Ok(lib) => {
+                    println!("Loaded ONNX Runtime from: {}", path);
+                    return Ok(lib);
+                }
+                Err(e) => {
+                    last_error = Some(e);
+                }
+            }
+        }
+
+        Err(OnnxRuntimeError(format!(
+            "Failed to load ONNX Runtime from any path. Last error: {}",
+            last_error.unwrap()
+        ))
+        .into())
+    }
+
+    pub fn new() -> Result<Self, Box<dyn Error>> {
+        let lib = Self::load_library()?;
 
         unsafe {
             let get_api_base: Symbol<OrtGetApiBaseFn> = lib.get(b"OrtGetApiBase")?;
