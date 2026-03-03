@@ -330,13 +330,37 @@ impl Downloader {
             }
 
             // Simplified check for libraries
-            if path_str.ends_with(".so")
+            if path_str.contains(".so") // Linux catches .so, .so.1, .so.1.2.3
                 || path_str.ends_with(".dylib")
                 || path_str.ends_with(".dll")
             {
                 let file_name = path.file_name().unwrap();
                 let dest_file = dest.join(file_name);
-                entry.unpack(dest_file)?;
+
+                let header = entry.header();
+
+                match header.entry_type() {
+                    tar::EntryType::Symlink => {
+                        if let Ok(Some(target_path)) = entry.link_name() {
+                            #[cfg(unix)]
+                            {
+                                // Remove existing file/link to avoid "File exists" error
+                                let _ = std::fs::remove_file(&dest_file);
+
+                                // target_path is a Cow<Path>, we use as_ref() to get the &Path
+                                std::os::unix::fs::symlink(target_path.as_ref(), &dest_file)?;
+                            }
+                            #[cfg(not(unix))]
+                            {
+                                entry.unpack(dest_file)?;
+                            }
+                        }
+                    }
+                    tar::EntryType::Regular | tar::EntryType::Continuous => {
+                        entry.unpack(dest_file)?;
+                    }
+                    _ => continue,
+                }
             }
         }
         Ok(())
