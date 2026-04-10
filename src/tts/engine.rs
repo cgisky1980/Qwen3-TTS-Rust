@@ -110,6 +110,10 @@ pub struct TtsEngine {
 }
 
 impl TtsEngine {
+    /// Same values as `LlamaContext::new` for the talker (prefill must respect both).
+    const TALKER_N_CTX: usize = 4096;
+    const TALKER_N_BATCH: usize = 2048;
+
     /// Initialize the TTS Engine from the specified model directory.
     ///
     /// This function loads all necessary models (GGUF, Onnx, Tokenizer) from the given directory.
@@ -511,24 +515,43 @@ impl TtsEngine {
 
     fn run_inference_stream(
         &mut self,
-        prompt_data: crate::tts::prompt::PromptData,
+        mut prompt_data: crate::tts::prompt::PromptData,
         stream_tx: Option<tokio::sync::mpsc::UnboundedSender<Vec<f32>>>,
     ) -> Result<AudioSample, String> {
         self.talker_ctx.clear_kv_cache();
         self.predictor_ctx.clear_kv_cache();
+
+        if prompt_data.embd.len() > Self::TALKER_N_CTX {
+            eprintln!(
+                "WARNING: prompt length {} exceeds talker n_ctx {}. Truncating from the end of the fused prompt.",
+                prompt_data.embd.len(),
+                Self::TALKER_N_CTX
+            );
+            prompt_data.embd.truncate(Self::TALKER_N_CTX);
+        }
 
         let n_tokens_prompt = prompt_data.embd.len();
         let prompt_embeds_flat: Vec<f32> = prompt_data.embd.iter().flatten().copied().collect();
         let talker_embd = self.talker_model.n_embd;
         let predictor_embd = self.predictor_model.n_embd;
 
-        let mut talker_batch = LlamaBatch::new(4096, talker_embd, 1, 4);
-        let pos_arr = Self::qwen3_position(0, n_tokens_prompt);
-        talker_batch.set_embd(&prompt_embeds_flat, &pos_arr, 0);
-
-        self.talker_ctx
-            .decode(&mut talker_batch)
-            .map_err(|e| format!("Talker prefill failed: {}", e))?;
+        let mut talker_batch = LlamaBatch::new(Self::TALKER_N_BATCH, talker_embd, 1, 4);
+        let mut talker_prefill_last_idx: i32 = 0;
+        let mut prefill_off = 0usize;
+        while prefill_off < n_tokens_prompt {
+            let chunk_tokens =
+                (n_tokens_prompt - prefill_off).min(Self::TALKER_N_BATCH);
+            let slice_start = prefill_off * talker_embd;
+            let slice_end = (prefill_off + chunk_tokens) * talker_embd;
+            let chunk_flat = &prompt_embeds_flat[slice_start..slice_end];
+            let pos_arr = Self::qwen3_position(prefill_off as i32, chunk_tokens);
+            talker_batch.set_embd(chunk_flat, &pos_arr, 0);
+            self.talker_ctx
+                .decode(&mut talker_batch)
+                .map_err(|e| format!("Talker prefill failed: {}", e))?;
+            talker_prefill_last_idx = (chunk_tokens.saturating_sub(1)) as i32;
+            prefill_off += chunk_tokens;
+        }
 
         let mut all_codes: Vec<i32> = Vec::new();
         let mut cur_pos = n_tokens_prompt;
@@ -610,7 +633,7 @@ impl TtsEngine {
 
             // Talker
             let sample_idx = if cur_pos == n_tokens_prompt {
-                (n_tokens_prompt - 1) as i32
+                talker_prefill_last_idx
             } else {
                 0
             };
@@ -679,7 +702,11 @@ impl TtsEngine {
             all_codes.push(code_0);
 
             // Predictor
-            let emb_idx = if step == 0 { n_tokens_prompt - 1 } else { 0 };
+            let emb_idx = if step == 0 {
+                talker_prefill_last_idx as usize
+            } else {
+                0
+            };
             let m_hidden = self.talker_ctx.get_embedding_at(emb_idx).to_vec();
 
             let m_h_1024 = self.assets.project(&m_hidden);

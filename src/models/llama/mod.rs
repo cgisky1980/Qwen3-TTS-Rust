@@ -539,28 +539,33 @@ impl LlamaBatch {
     }
 
     pub fn set_embd(&mut self, prompt_embeds: &[f32], pos_arr: &[i32], seq_id: i32) {
-        let n_tokens = prompt_embeds.len() / self.n_embd;
+        let embed_tokens = prompt_embeds.len() / self.n_embd;
+        let mut n_tokens = embed_tokens.min(self.n_tokens_max);
+        if embed_tokens > self.n_tokens_max {
+            eprintln!(
+                "WARNING: prompt tokens {} exceeds batch capacity {}. Truncating!",
+                embed_tokens,
+                self.n_tokens_max
+            );
+        }
+        // llama_batch.pos has one llama_pos per token; qwen3_position packs (t,h,w,c) but
+        // indices 0..n_tokens are the temporal row — what decode expects per token.
+        if pos_arr.len() < n_tokens {
+            eprintln!(
+                "WARNING: pos_arr length {} < n_tokens {}. Clamping.",
+                pos_arr.len(),
+                n_tokens
+            );
+            n_tokens = pos_arr.len().min(n_tokens);
+        }
         unsafe {
             std::ptr::copy_nonoverlapping(
                 prompt_embeds.as_ptr(),
                 self.batch.embd,
-                prompt_embeds.len(),
+                n_tokens * self.n_embd,
             );
 
-            let max_pos = self.n_tokens_max;
-
-            if pos_arr.len() > max_pos {
-                eprintln!(
-                    "WARNING: pos_arr length {} exceeds batch capacity {}. Truncating!",
-                    pos_arr.len(),
-                    max_pos
-                );
-            }
-            std::ptr::copy_nonoverlapping(
-                pos_arr.as_ptr(),
-                self.batch.pos,
-                pos_arr.len().min(max_pos),
-            );
+            std::ptr::copy_nonoverlapping(pos_arr.as_ptr(), self.batch.pos, n_tokens);
         }
 
         for i in 0..n_tokens {
